@@ -5,6 +5,7 @@
 
 param([string]$Channel="dev")
 
+if(!$Channel) { $Channel="dev" }
 
 $ErrorActionPreference="Stop"
 $ProgressPreference="SilentlyContinue"

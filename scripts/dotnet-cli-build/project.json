@@ -1,0 +1,17 @@
+﻿{
+    "version": "1.0.0-*",
+    "description": "Build scripts for dotnet-cli",
+    "compilationOptions": {
+        "emitEntryPoint": true
+    },
+
+    "dependencies": {
+        "NETStandard.Library": "1.0.0-rc2-23728",
+        "Microsoft.Extensions.PlatformAbstractions": "1.0.0-rc2-*",
+        "Microsoft.DotNet.Cli.Build.Framework": { "target": "project" }
+    },
+
+    "frameworks": {
+        "dnxcore50": { }
+    }
+}

@@ -21,8 +21,6 @@ namespace Microsoft.DotNet.Tools.Restore
             var result = Run(Enumerable.Concat(
                     prefixArgs,
                     args))
-                .ForwardStdErr()
-                .ForwardStdOut()
                 .Execute();
 
             return result.ExitCode;

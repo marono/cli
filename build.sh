@@ -16,26 +16,11 @@ while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symli
 done
 DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
-source "$DIR/scripts/common/_common.sh"
-source "$REPOROOT/scripts/build/process-args.sh"
+# Use a repo-local install directory (but not the artifacts directory because that gets cleaned a lot
+[ -z "$DOTNET_INSTALL_DIR" ] && export DOTNET_INSTALL_DIR=$DIR/../../.dotnet_stage0/$(uname)
+[ -d $DOTNET_INSTALL_DIR ] || mkdir -p $DOTNET_INSTALL_DIR
 
-# splitting build from package is required to work around dotnet/coreclr#2215
-# once that is fixed, we should remove the NOPACKAGE flag and do the full build either in
-# or out of docker.
-if [ ! -z "$BUILD_IN_DOCKER" ]; then
-    export BUILD_COMMAND=". /opt/code/scripts/build/process-args.sh $@ ; . /opt/code/scripts/build/build.sh"
-    $REPOROOT/scripts/docker/dockerbuild.sh
-else
-    $REPOROOT/scripts/build/build.sh
-fi
+# Ensure the latest stage0 is installed
+$DIR/scripts/obtain/install.sh
 
-if [ ! -z "$NOPACKAGE" ]; then
-    header "Skipping packaging"
-else
-    if [ ! -z "$PACKAGE_IN_DOCKER" ]; then
-        export BUILD_COMMAND="/opt/code/scripts/package/package.sh"
-        $REPOROOT/scripts/docker/dockerbuild.sh
-    else
-        $REPOROOT/scripts/package/package.sh
-    fi
-fi
+# Use the stage 0 to build!
