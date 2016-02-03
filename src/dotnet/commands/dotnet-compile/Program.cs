@@ -59,16 +59,15 @@ namespace Microsoft.DotNet.Tools.Compiler
             ProjectContext context,
             CompilerCommandApp args)
         {
-            var outputPathCalculator = context.GetOutputPathCalculator(args.OutputValue);
-            var outputPath = outputPathCalculator.GetOutputDirectoryPath(args.ConfigValue);
+            var outputPathCalculator = context.GetOutputPathCalculator(args.BuildBasePathValue, args.OutputValue);
+            var outputPath = outputPathCalculator.GetFinalOutputPath(args.ConfigValue);
             var nativeOutputPath = Path.Combine(outputPath, "native");
             var intermediateOutputPath =
-                outputPathCalculator.GetIntermediateOutputDirectoryPath(args.ConfigValue, args.IntermediateValue);
+                outputPathCalculator.GetIntermediateOutputDirectoryPath(args.ConfigValue);
             var nativeIntermediateOutputPath = Path.Combine(intermediateOutputPath, "native");
             Directory.CreateDirectory(nativeOutputPath);
             Directory.CreateDirectory(nativeIntermediateOutputPath);
 
-            var compilationOptions = context.ProjectFile.GetCompilerOptions(context.TargetFramework, args.ConfigValue);
             var managedOutput = outputPathCalculator.GetAssemblyPath(args.ConfigValue);
 
             var nativeArgs = new List<string>();
@@ -158,10 +157,10 @@ namespace Microsoft.DotNet.Tools.Compiler
         private static bool CompileProject(ProjectContext context, CompilerCommandApp args)
         {
             // Set up Output Paths
-            var outputPathCalculator = context.GetOutputPathCalculator(args.OutputValue);
-            var outputPath = outputPathCalculator.GetOutputDirectoryPath(args.ConfigValue);
+            var outputPathCalculator = context.GetOutputPathCalculator(args.BuildBasePathValue);
+            var outputPath = outputPathCalculator.GetCompilationOutputPath(args.ConfigValue);
             var intermediateOutputPath =
-                outputPathCalculator.GetIntermediateOutputDirectoryPath(args.ConfigValue, args.IntermediateValue);
+                outputPathCalculator.GetIntermediateOutputDirectoryPath(args.ConfigValue);
 
             Directory.CreateDirectory(outputPath);
             Directory.CreateDirectory(intermediateOutputPath);
@@ -316,7 +315,7 @@ namespace Microsoft.DotNet.Tools.Compiler
             {
                 success &= GenerateCultureResourceAssemblies(context.ProjectFile, dependencies, intermediateOutputPath, outputPath);
             }
-            
+
             return PrintSummary(diagnostics, sw, success);
         }
 

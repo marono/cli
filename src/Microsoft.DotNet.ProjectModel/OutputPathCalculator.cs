@@ -12,71 +12,63 @@ namespace Microsoft.DotNet.ProjectModel
     public class OutputPathCalculator
     {
         private const string ObjDirectoryName = "obj";
+        private const string BinDirectoryName = "bin";
 
         private readonly Project _project;
         private readonly NuGetFramework _framework;
 
         private readonly string _runtimeIdentifier;
 
-        /// <summary>
-        /// Unaltered output path. Either what is passed in in the constructor, or the project directory.
-        /// </summary>
-        private string BaseOutputPath { get; }
-
-        public string BaseCompilationOutputPath { get; }
+        private string BaseBuildPath { get; }
+        private string OutputPath { get; }
 
         public OutputPathCalculator(
             Project project,
             NuGetFramework framework,
             string runtimeIdentifier,
-            string baseOutputPath)
+            string baseBuildPath,
+            string outputPath)
         {
             _project = project;
             _framework = framework;
             _runtimeIdentifier = runtimeIdentifier;
 
-            BaseOutputPath = string.IsNullOrWhiteSpace(baseOutputPath) ? _project.ProjectDirectory : baseOutputPath;
+            BaseBuildPath = string.IsNullOrEmpty(baseBuildPath)
+                ? _project.ProjectDirectory
+                : Path.Combine(baseBuildPath, _project.Name);
 
-            BaseCompilationOutputPath = string.IsNullOrWhiteSpace(baseOutputPath)
-                ? Path.Combine(_project.ProjectDirectory, DirectoryNames.Bin)
-                : baseOutputPath;
+            OutputPath = outputPath;
         }
 
-        public string GetOutputDirectoryPath(string buildConfiguration)
+        public string GetCompilationOutputPath(string buildConfiguration)
         {
-            var outDir = Path.Combine(BaseCompilationOutputPath,
+            var outDir = Path.GetFullPath(Path.Combine(BaseBuildPath,
+                BinDirectoryName,
                 buildConfiguration,
-                _framework.GetShortFolderName());
-
-            if (!string.IsNullOrEmpty(_runtimeIdentifier))
-            {
-                outDir = Path.Combine(outDir, _runtimeIdentifier);
-            }
+                _framework.GetShortFolderName()));
 
             return outDir;
         }
 
-        public string GetIntermediateOutputDirectoryPath(string buildConfiguration, string intermediateOutputValue)
+        public string GetFinalOutputPath(string buildConfiguration)
         {
-            string intermediateOutputPath;
-
-            if (string.IsNullOrEmpty(intermediateOutputValue))
+            if (string.IsNullOrEmpty(OutputPath))
             {
-                intermediateOutputPath = Path.Combine(
-                    BaseOutputPath,
-                    ObjDirectoryName,
-                    buildConfiguration,
-                    _framework.GetTwoDigitShortFolderName());
+                return Path.Combine(GetCompilationOutputPath(buildConfiguration), _runtimeIdentifier);
             }
-            else
-            {
-                intermediateOutputPath = intermediateOutputValue;
-            }
-
-            return intermediateOutputPath;
+            return OutputPath;
         }
 
-        public string GetAssemblyPath(string buildConfiguration)
+        public string GetIntermediateOutputDirectoryPath(string buildConfiguration)
+        {
+            return Path.Combine(
+                BaseBuildPath,
+                ObjDirectoryName,
+                buildConfiguration,
+                _framework.GetTwoDigitShortFolderName());
+        }
+
+        public string GetAssemblyPath(string buildConfiguration, bool runtime = false)
         {
             var compilationOptions = _project.GetCompilerOptions(_framework, buildConfiguration);
             var outputExtension = FileNameSuffixes.DotNet.DynamicLib;
@@ -87,13 +79,13 @@ namespace Microsoft.DotNet.ProjectModel
             }
 
             return Path.Combine(
-                GetOutputDirectoryPath(buildConfiguration),
+                runtime ? GetFinalOutputPath(buildConfiguration) : GetCompilationOutputPath(buildConfiguration),
                 _project.Name + outputExtension);
         }
 
-        public IEnumerable<string> GetBuildOutputs(string buildConfiguration)
+        public IEnumerable<string> GetBuildOutputs(string buildConfiguration, bool runtime = false)
         {
-            var assemblyPath = GetAssemblyPath(buildConfiguration);
+            var assemblyPath = GetAssemblyPath(buildConfiguration, runtime);
 
             yield return assemblyPath;
             yield return Path.ChangeExtension(assemblyPath, "pdb");
@@ -105,26 +97,31 @@ namespace Microsoft.DotNet.ProjectModel
                 yield return Path.ChangeExtension(assemblyPath, "xml");
             }
 
-            // This should only exist in desktop framework
-            var configFile = assemblyPath + ".config";
-
-            if (File.Exists(configFile))
+            if (runtime)
             {
-                yield return configFile;
-            }
+                // This should only exist in desktop framework
+                var configFile = assemblyPath + ".config";
 
-            // Deps file
-            var depsFile = GetDepsPath(buildConfiguration);
+                if (File.Exists(configFile))
+                {
+                    yield return configFile;
+                }
 
-            if (File.Exists(depsFile))
-            {
-                yield return depsFile;
+                // Deps file
+                var depsFile = GetDepsPath(buildConfiguration);
+
+                if (File.Exists(depsFile))
+                {
+                    yield return depsFile;
+                }
             }
         }
 
         public string GetDepsPath(string buildConfiguration)
         {
-            return Path.Combine(GetOutputDirectoryPath(buildConfiguration), _project.Name + FileNameSuffixes.Deps);
+            return Path.Combine(
+                GetFinalOutputPath(buildConfiguration),
+                _project.Name + FileNameSuffixes.Deps);
         }
 
         public string GetExecutablePath(string buildConfiguration)
@@ -139,14 +136,14 @@ namespace Microsoft.DotNet.ProjectModel
             }
 
             return Path.Combine(
-                GetOutputDirectoryPath(buildConfiguration),
+                GetFinalOutputPath(buildConfiguration),
                 _project.Name + extension);
         }
 
         public string GetPdbPath(string buildConfiguration)
         {
             return Path.Combine(
-                GetOutputDirectoryPath(buildConfiguration),
+                GetCompilationOutputPath(buildConfiguration),
                 _project.Name + FileNameSuffixes.DotNet.ProgramDatabase);
         }
     }

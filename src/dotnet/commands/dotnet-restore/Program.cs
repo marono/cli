@@ -180,7 +180,7 @@ namespace Microsoft.DotNet.Tools.Restore
 
             if (File.Exists(depsPath)) File.Delete(depsPath);
 
-            File.Move(Path.Combine(calculator.GetOutputDirectoryPath(Constants.DefaultConfiguration), "bin" + FileNameSuffixes.Deps), depsPath);
+            File.Move(Path.Combine(calculator.GetCompilationOutputPath(Constants.DefaultConfiguration), "bin" + FileNameSuffixes.Deps), depsPath);
         }
 
         private static bool RestoreToolToPath(LibraryRange tooldep, IEnumerable<string> args, string tempPath, bool quiet)

@@ -47,7 +47,7 @@ namespace Microsoft.DotNet.Cli.Compiler.Common
                 .Union(export.RuntimeAssets);
         }
 
-        internal static void CopyTo(this IEnumerable<string> assets, string destinationPath)
+        public static void CopyTo(this IEnumerable<string> assets, string destinationPath)
         {
             foreach (var asset in assets)
             {

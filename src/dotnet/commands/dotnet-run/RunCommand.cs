@@ -8,6 +8,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
+using Microsoft.Extensions.PlatformAbstractions;
 using NuGet.Frameworks;
 
 namespace Microsoft.DotNet.Tools.Run
@@ -60,15 +61,14 @@ namespace Microsoft.DotNet.Tools.Run
                 Configuration = Constants.DefaultConfiguration;
             }
 
-            var contexts = ProjectContext.CreateContextForEachFramework(Project);
+            var rids = PlatformServices.Default.Runtime.GetAllCandidateRuntimeIdentifiers();
             if (Framework == null)
             {
-                _context = contexts.First();
+                _context = ProjectContext.CreateContextForDefaultFramework(Project, null, rids);
             }
             else
             {
-                var fx = NuGetFramework.Parse(Framework);
-                _context = contexts.FirstOrDefault(c => c.TargetFramework.Equals(fx));
+                _context = ProjectContext.Create(Project, NuGetFramework.Parse(Framework), rids);
             }
 
             if (Args == null)
@@ -94,8 +94,6 @@ namespace Microsoft.DotNet.Tools.Run
                 {
                     $"--output",
                     $"{tempDir}",
-                    $"--temp-output",
-                    $"{tempDir}",
                     $"--framework",
                     $"{_context.TargetFramework}",
                     $"--configuration",
@@ -112,7 +110,7 @@ namespace Microsoft.DotNet.Tools.Run
             }
 
             // Now launch the output and give it the results
-            var outputName = _context.GetOutputPathCalculator(tempDir).GetExecutablePath(Configuration);
+            var outputName = _context.GetOutputPathCalculator(tempDir, tempDir).GetExecutablePath(Configuration);
 
             if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

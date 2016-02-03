@@ -29,7 +29,7 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
 
         public void MakeCompilationOutputRunnable(string configuration)
         {
-            var outputPath = _calculator.GetOutputDirectoryPath(configuration);
+            var outputPath = _calculator.GetFinalOutputPath(configuration);
 
             CopyContentFiles(outputPath);
 
@@ -48,7 +48,7 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
             {
                 MakeCompilationOutputRunnableForCoreCLR(outputPath, exporter);
             }
-        }        
+        }
 
         private void MakeCompilationOutputRunnableForFullFramework(
             string outputPath,
@@ -58,7 +58,7 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
             CopyAllDependencies(outputPath, exporter);
 
             GenerateBindingRedirects(exporter, configuration);
-        }        
+        }
 
         private void MakeCompilationOutputRunnableForCoreCLR(string outputPath, LibraryExporter exporter)
         {
@@ -77,7 +77,7 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
         private static void CopyAllDependencies(string outputPath, LibraryExporter exporter)
         {
             exporter
-                .GetDependencies()
+                .GetAllExports()
                 .SelectMany(e => e.RuntimeAssets())
                 .CopyTo(outputPath);
         }
@@ -92,14 +92,15 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
                 .WriteDepsTo(Path.Combine(outputPath, projectFileName + FileNameSuffixes.Deps));
 
             exporter
-                .GetDependencies(LibraryType.Project)
+                .GetAllExports()
+                .Where(e => e.Library.Identity.Type == LibraryType.Project)
                 .SelectMany(e => e.RuntimeAssets())
                 .CopyTo(outputPath);
-        }                        
+        }
 
         public void GenerateBindingRedirects(LibraryExporter exporter, string configuration)
         {
-            var outputName = _calculator.GetAssemblyPath(configuration);
+            var outputName = _calculator.GetAssemblyPath(configuration, true);
 
             var existingConfig = new DirectoryInfo(_context.ProjectDirectory)
                 .EnumerateFiles()

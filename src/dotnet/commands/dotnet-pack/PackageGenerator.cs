@@ -59,7 +59,6 @@ namespace Microsoft.DotNet.Tools.Compiler
 
             var packageOutputPath = Path.Combine(
                 ArtifactPathsCalculator.PackageOutputPath,
-                Configuration,
                 GetPackageName() + NuGet.Constants.PackageExtension);
 
             if (GeneratePackage(packageOutputPath, packDiagnostics))
