@@ -39,8 +39,8 @@ namespace Microsoft.DotNet.Cli.Build
             var dotnet = DotNetCli.Stage2;
             dotnet.Restore().WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "test", "TestPackages")).Execute().EnsureSuccessful();
 
-            // The 'testapp' directory contains intentionally-unresolved dependencies, so don't check for success
-            dotnet.Restore().WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "testapp")).Execute();
+            // The 'testapp' directory contains intentionally-unresolved dependencies, so don't check for success. Also, suppress the output
+            dotnet.Restore().WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "testapp")).CaptureStdErr().CaptureStdOut().Execute();
 
             return c.Success();
         }
@@ -101,18 +101,18 @@ namespace Microsoft.DotNet.Cli.Build
             var vsvars = LoadVsVars();
 
             // Copy the test projects
-            var testProjectsDir = Path.Combine(Dirs.Base, "TestProjects");
+            var testProjectsDir = Path.Combine(Dirs.TestBase, "TestProjects");
             Rmdir(testProjectsDir);
             Mkdirp(testProjectsDir);
             CopyRecursive(Path.Combine(c.BuildContext.BuildDirectory, "test", "TestProjects"), testProjectsDir);
 
             // Run the tests and set the VS vars in the environment when running them
-            var corerun = Path.Combine(Dirs.Base, $"corehost{Constants.ExeSuffix}");
+            var corerun = Path.Combine(Dirs.TestBase, $"corerun{Constants.ExeSuffix}");
             var failingTests = new List<string>();
             foreach (var project in TestProjects)
             {
                 var result = Cmd(corerun, "xunit.console.netcore.exe", $"{project}.dll", "-xml", $"{project}-testResults.xml", "-notrait", "category=failing")
-                    .WorkingDirectory(Dirs.Base)
+                    .WorkingDirectory(Dirs.TestBase)
                     .Environment(vsvars)
                     .Execute();
                 if (result.ExitCode != 0)
@@ -136,7 +136,30 @@ namespace Microsoft.DotNet.Cli.Build
         [Target]
         public static BuildTargetResult RunPackageCommandTests(BuildTargetContext c)
         {
-            return c.Failed("Not yet implemented");
+            var dotnet = DotNetCli.Stage2;
+            var consumers = Path.Combine(c.BuildContext.BuildDirectory, "test", "PackagedCommands", "Consumers");
+
+            // Compile the consumer apps
+            foreach(var dir in Directory.EnumerateDirectories(consumers))
+            {
+                dotnet.Build().WorkingDirectory(dir).Execute().EnsureSuccessful();
+            }
+
+            // Test the apps
+            foreach(var dir in Directory.EnumerateDirectories(consumers))
+            {
+                var result = dotnet.Exec("hello").WorkingDirectory(dir).CaptureStdOut().CaptureStdErr().Execute();
+                result.EnsureSuccessful();
+                if(!string.Equals("hello", result.StdOut, StringComparison.Ordinal))
+                {
+                    var testName = Path.GetFileName(dir);
+                    c.Error($"Packaged Commands Test '{testName}' failed");
+                    c.Error($"  Expected 'hello', but got: {result.StdOut}");
+                    return c.Failed($"Packaged Commands Test failed '{testName}'");
+                }
+            }
+
+            return c.Success();
         }
 
         [Target]
@@ -154,10 +177,28 @@ namespace Microsoft.DotNet.Cli.Build
 
             var vsvarsPath = Path.GetFullPath(Path.Combine(Environment.GetEnvironmentVariable("VS140COMNTOOLS"), "..", "..", "VC"));
 
-            var result = Cmd(Environment.GetEnvironmentVariable("COMSPEC"), "/c", "vcvarsall.bat", "x64", "&set")
-                .WorkingDirectory(vsvarsPath)
-                .CaptureStdOut()
-                .Execute();
+            // Write a temp batch file because that seems to be the easiest way to do this
+            var temp = Path.Combine(Path.GetTempPath(), $"{Path.GetRandomFileName()}.cmd");
+            File.WriteAllText(temp, $@"@echo off
+cd {vsvarsPath}
+call vcvarsall.bat
+set");
+
+            CommandResult result;
+            try
+            {
+                result = Cmd(Environment.GetEnvironmentVariable("COMSPEC"), "/c", temp)
+                    .WorkingDirectory(vsvarsPath)
+                    .CaptureStdOut()
+                    .Execute();
+            }
+            finally
+            {
+                if (File.Exists(temp))
+                {
+                    File.Delete(temp);
+                }
+            }
             result.EnsureSuccessful();
             var vars = new Dictionary<string, string>();
             foreach (var line in result.StdOut.Split(new[] { Environment.NewLine }, StringSplitOptions.RemoveEmptyEntries))

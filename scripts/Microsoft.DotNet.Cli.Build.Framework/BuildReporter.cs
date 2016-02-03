@@ -6,7 +6,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
     {
         public static void BeginSection(string type, string name)
         {
-            Reporter.Output.WriteLine($"[{type.PadRight(10)} >]".Green() + $" [    ] [{DateTime.Now:O}]".Blue() + $" {name}");
+            Reporter.Output.WriteLine($"[{type.PadRight(10)} >]".Green() + $" [....] [{DateTime.Now:O}]".Blue() + $" {name}");
         }
 
         public static void EndSection(string type, string name, bool success)

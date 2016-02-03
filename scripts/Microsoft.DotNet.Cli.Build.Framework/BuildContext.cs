@@ -85,7 +85,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             var failedDependencyResult = RunDependencies(target, dependencyResults);
             if (failedDependencyResult != null)
             {
-                result = new BuildTargetResult(target, success: false, errorMessage: $"Dependent target '{failedDependencyResult.Target.Name}' failed.");
+                result = failedDependencyResult;
             }
             else if (target.Body != null)
             {

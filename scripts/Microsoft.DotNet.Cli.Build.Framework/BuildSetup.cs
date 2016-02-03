@@ -65,16 +65,27 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             }
 
             var context = new BuildContext(_targets, Directory.GetCurrentDirectory());
+            BuildTargetResult result;
             try
             {
-                context.RunTarget(BuildContext.DefaultTarget);
+                result = context.RunTarget(BuildContext.DefaultTarget);
             }
             catch (Exception ex)
             {
                 Reporter.Error.WriteLine(ex.ToString().Red());
                 return 1;
             }
-            return 0;
+
+            if(!result.Success)
+            {
+                Reporter.Error.WriteLine($"Build failed: {result.ErrorMessage}".Red());
+                return 0;
+            }
+            else
+            {
+                Reporter.Output.WriteLine("Build succeeded".Green());
+                return 1;
+            }
         }
 
         private static IEnumerable<BuildTarget> CollectTargets(Type typ)
