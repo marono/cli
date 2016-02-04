@@ -10,7 +10,7 @@ namespace Microsoft.DotNet.Tools.Publish.Tests
 {
     public class CompilerTests : TestBase
     {
-        private string _testProjectsRoot = @"TestProjects";
+        private string _testProjectsRoot = Path.Combine(AppContext.BaseDirectory, "TestProjects");
 
         [Fact]
         public void XmlDocumentationFileIsGenerated()

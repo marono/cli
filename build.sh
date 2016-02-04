@@ -24,3 +24,5 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 $DIR/scripts/obtain/install.sh
 
 # Use the stage 0 to build!
+echo "Not yet implemented"
+exit 1

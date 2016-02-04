@@ -68,7 +68,7 @@ namespace Microsoft.DotNet.Cli.Build
         [Target]
         public static BuildTargetResult RestoreTests(BuildTargetContext c)
         {
-            var configuration = (string)c.BuildContext["Configuration"];
+            var configuration = (string)c.BuildContext["Configuration"] ?? "Debug";
             DotNetCli.Stage2.Restore("--fallbacksource", Path.Combine(Dirs.TestPackages, configuration))
                 .WorkingDirectory(Path.Combine(c.BuildContext.BuildDirectory, "test"))
                 .Execute()
@@ -79,7 +79,7 @@ namespace Microsoft.DotNet.Cli.Build
         [Target]
         public static BuildTargetResult BuildTests(BuildTargetContext c)
         {
-            var configuration = (string)c.BuildContext["Configuration"];
+            var configuration = (string)c.BuildContext["Configuration"] ?? "Debug";
             var dotnet = DotNetCli.Stage2;
             foreach (var testProject in TestProjects)
             {

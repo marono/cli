@@ -11,7 +11,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public BuildTargetResult(BuildTarget target, bool success) : this(target, success, errorMessage: string.Empty) { }
 
-        public BuildTargetResult(BuildTarget target, bool success, Exception exception) : this(target, success, exception.Message)
+        public BuildTargetResult(BuildTarget target, bool success, Exception exception) : this(target, success, exception.ToString())
         {
             Exception = exception;
         }

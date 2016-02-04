@@ -78,6 +78,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         /// <returns></returns>
         public TempDirectory CopyDirectory(string sourceDirectory)
         {
+            Console.WriteLine($"Copying from {sourceDirectory} to {Path}");
             Debug.Assert(Directory.Exists(sourceDirectory));
              
             var tempCopy = CreateDirectory(new DirectoryInfo(sourceDirectory).Name);

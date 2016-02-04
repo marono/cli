@@ -54,6 +54,12 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         {
             DebugHelper.HandleDebugSwitch(ref args);
 
+            var target = BuildContext.DefaultTarget;
+            if(args.Length > 0)
+            {
+                target = args[0];
+            }
+
             Reporter.Output.WriteBanner($"Building {ProductName}");
 
             if (_overrides.Any())
@@ -68,7 +74,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             BuildTargetResult result;
             try
             {
-                result = context.RunTarget(BuildContext.DefaultTarget);
+                result = context.RunTarget(target);
             }
             catch (Exception ex)
             {
